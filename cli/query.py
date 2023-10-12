@@ -37,7 +37,7 @@ def get_int(prompt):
         except ValueError:
             print('Please enter integer.')
 
-def lst_of_items(lst, name,total_1 = 0, total_2 = 0 ):
+def lst_of_items(name, data = None, product_counter = None, total_1 = 0, total_2 = 0 ):
     """
     Print items from list of dictionary, typically representing warehouse inventories.
     
@@ -47,26 +47,38 @@ def lst_of_items(lst, name,total_1 = 0, total_2 = 0 ):
     Note:
     The items from each warehouse are printed separately.
     """
-    print()
-    print('Items in warehouse 1:')
-    print()
-    for dct in lst:
-        total_1 += 1
-        if dct['warehouse'] == 1:
+    if data is None:
+        
+        data = rearrange_stock_based_on_warehouse() # prevent to change items by iterating
+        
+    if product_counter is None:
+        
+        product_counter = {} # prevent to change items by iterating
+    
+    for key, value in data.items():
+    
+        print(f'Items in warehouse {key}:')
+        for dct in value:
             
-            print(f"- {dct['state']} {dct['category']}")
-    print()
-    print('Items in warehouse 2:')
-    print()
-    for dct in lst:
-        total_2 += 1
-        if dct['warehouse'] == 2:
+            print(dct['state'] + ' ' + dct['category'])
+    
+    for key, value in data.items():
+
+        for dct in value:
             
-            print(f"- {dct['state']} {dct['category']}")
+            amount_each_warehouse = dct['warehouse']
+            
+            if amount_each_warehouse in product_counter:
+                
+                product_counter[amount_each_warehouse] += 1
+            else:
+                product_counter[amount_each_warehouse] = 1
             
     print()
-    print(f'Total items in warehouse 1: {total_1}')
-    print(f'Total items in warehouse 2: {total_2}')
+    for number, amount_product in product_counter.items():
+        
+        print(f'Total items in warehouse {number}: {amount_product}')
+    
     print()
     print(f'Thank you for your visit, {name}!')
             
@@ -171,6 +183,26 @@ def ask_for_placing_order(name, total, item_name):
                     break
                 
                 return
+            
+def rearrange_stock_based_on_warehouse(grouped_by_warehouse= None):
+    
+    if grouped_by_warehouse is None:
+        
+        grouped_by_warehouse = {}
+        
+    for dict in stock:
+        
+        key = dict['warehouse']
+        
+        if key not in grouped_by_warehouse:
+            
+            grouped_by_warehouse[key] = []
+        
+        
+        grouped_by_warehouse[key].append(dict)
+    
+    return grouped_by_warehouse
+    
             
 def searching_for_item(name, total_1= 0, total_2 = 0, days_since_then1 = None, days_since_then2 = None):
     """
@@ -352,7 +384,7 @@ def options(name):
             
         if query_for_options == '1':
             
-            lst_of_items(stock, name)
+            lst_of_items(name)
             
         elif query_for_options == '2':
             
