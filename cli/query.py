@@ -37,7 +37,7 @@ def get_int(prompt):
         except ValueError:
             print('Please enter integer.')
 
-def lst_of_items(name, data = None, product_counter = None, total_1 = 0, total_2 = 0 ):
+def lst_of_items(name, data = None, product_counter = None, items_per_page = 50 ):
     """
     Print items from list of dictionary, typically representing warehouse inventories.
     
@@ -57,10 +57,30 @@ def lst_of_items(name, data = None, product_counter = None, total_1 = 0, total_2
     
     for key, value in data.items():
     
+        print()
         print(f'Items in warehouse {key}:')
-        for dct in value:
+        print()
+        page = 0
+        count = 0 
+        while page * items_per_page < len(value):
             
-            print(dct['state'] + ' ' + dct['category'])
+            start_idx = page * items_per_page
+            end_idx = start_idx + items_per_page
+        
+            for dct in value[start_idx:end_idx]:
+                count += 1
+                print(f"{count}. {dct['state']} {dct['category']}")
+                
+            page += 1
+            
+            if page * items_per_page < len(value):
+                print()
+                prompt = input(f'Displaying {start_idx + 1}-{end_idx} of {len(value)} products in warehouse {key}. Press enter for next page or "q" for next warehouse: ')
+                print()
+                if prompt == 'q':
+                    break
+            else:
+                break
     
     for key, value in data.items():
 

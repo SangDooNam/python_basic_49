@@ -69,12 +69,4 @@ data = rearrange_stock_based_on_warehouse()
 # total_items_in_data = sum(len(v) for v in data.values())
 # print(total_items_in_data)
 
-amount_displaying_page = 100
 
-index = 0 
-
-for key, value in data.items():
-    
-    print(len(value))
-    start_idx = index * amount_displaying_page
-    end_idx = index + amount_displaying_page
