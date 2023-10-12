@@ -39,13 +39,24 @@ def get_int(prompt):
 
 def lst_of_items(name, data = None, product_counter = None, items_per_page = 50 ):
     """
-    Print items from list of dictionary, typically representing warehouse inventories.
-    
+    Displays items in a paginated manner based on the warehouse.
+
+    This function retrieves and displays items from a dataset organized by warehouses. 
+    The display is paginated to ensure that a large number of items can be easily navigated.
+
     Parameters:
-    - lst1 (list): list of dictionary 
-    
+    - name (str): Name of the user.
+    - data (dict, optional): A dictionary of items organized by warehouses. If not provided, 
+                            it defaults to the output of the function `rearrange_stock_based_on_warehouse()`.
+    - product_counter (dict, optional): A dictionary to keep track of the number of products per warehouse. 
+                                        If not provided, an empty dictionary is initialized.
+    - items_per_page (int, default=50): The number of items displayed per page during pagination.
+
+    Returns:
+    None. This function interacts with the user through print statements and input prompts.
+
     Note:
-    The items from each warehouse are printed separately.
+    The items from different warehouses are displayed in separate sections.
     """
     if data is None:
         
