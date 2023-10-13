@@ -214,7 +214,7 @@ def rearrange_stock_based_on_warehouse(grouped_by_warehouse=None):
     return grouped_by_warehouse
 
 
-def searching_for_item(name, data = None):
+def searching_for_item(name, data=None):
     """
     Search item and validate the amount of the item in each any number of warehouse.
 
@@ -244,18 +244,23 @@ def searching_for_item(name, data = None):
         for warehouse_number, product in data.items():
             count = 0
             for dct in product:
-                
-                if looking_for_item.lower() == dct['state'].lower() + ' ' + dct['category'].lower():
-                    
-                    date = (dt.today() - dt.strptime(dct['date_of_stock'], "%Y-%m-%d %H:%M:%S")).days
-                    
-                    print(f'- {looking_for_item.capitalize()} (in stock for {date} days) in Warehouse {warehouse_number}')
+                if (
+                    looking_for_item.lower()
+                    == dct["state"].lower() + " " + dct["category"].lower()
+                ):
+                    date = (
+                        dt.today()
+                        - dt.strptime(dct["date_of_stock"], "%Y-%m-%d %H:%M:%S")
+                    ).days
+
+                    print(
+                        f"- {looking_for_item.capitalize()} (in stock for {date} days) in Warehouse {warehouse_number}"
+                    )
                     count += 1
                     total_amount += 1
-            print(f'Maximim availability: {count} in Warehouse {warehouse_number}')
-        
-        print(f'Total available amount is: {total_amount}')
-        
+            print(f"Maximim availability: {count} in Warehouse {warehouse_number}")
+
+        print(f"Total available amount is: {total_amount}")
 
         if total_amount == 0:
             print(f"Amount available: {total_amount}")
@@ -266,11 +271,11 @@ def searching_for_item(name, data = None):
 
         else:
             ask_for_placing_order(name, total_amount, looking_for_item)
-        
+
         return
 
 
-def browse_by_category(name, counter=1, product_counter=None, product_dct=None):
+def browse_by_category(name, counter=1, product_counter=None, product_dct=None, data=None):
     """
     Display a menu of available product categories.
     Upon selecting a category number, it prints all products
@@ -298,6 +303,8 @@ def browse_by_category(name, counter=1, product_counter=None, product_dct=None):
         product_counter = {}
     if product_dct is None:
         product_dct = {}
+    if data is None:
+        data = rearrange_stock_based_on_warehouse()
 
     for dct in stock:
         product = dct["category"]
@@ -315,16 +322,32 @@ def browse_by_category(name, counter=1, product_counter=None, product_dct=None):
 
     prompt = get_int("Type the number of the category to browse: ")
     print()
+    
+    
     for key, value in product_dct.items():
         if prompt == key:
-            for dict in stock:
-                if value[0] in dict["category"]:
-                    if dict["warehouse"] == 1:
-                        print(f'{dict["state"]} {dict["category"]}, Warehouse 1')
-                    else:
-                        print(f'{dict["state"]} {dict["category"]}, Warehouse 2')
+            for warehouse_number, product in data.items():
+                total = 0
+                for dct in product:
+                    if value[0] in dct["category"]:
+                        print(f'{dct["state"]} {dct["category"]}, Warehouse {warehouse_number}')
+                        total += 1
+                print(f'- Total {total} amount of {value[0]} in warehouse {warehouse_number}')
+                prompt = input('Please press enter for next warehouse : ')
+                            
     print()
     print(f"Thank you for your visit, {name}!")
+    # print()
+    # for key, value in product_dct.items():
+    #     if prompt == key:
+    #         for dict in stock:
+    #             if value[0] in dict["category"]:
+    #                 if dict["warehouse"] == 1:
+    #                     print(f'{dict["state"]} {dict["category"]}, Warehouse 1')
+    #                 else:
+    #                     print(f'{dict["state"]} {dict["category"]}, Warehouse 2')
+    # print()
+    # print(f"Thank you for your visit, {name}!")
 
 
 def options(name):
@@ -371,7 +394,6 @@ def options(name):
 
         elif query_for_options == "3":
             browse_by_category(name, product_counter={})
-        return
 
 
 def main():
