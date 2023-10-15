@@ -200,6 +200,20 @@ def ask_for_placing_order(name, total, item_name):
 
 
 def rearrange_stock_based_on_warehouse(grouped_by_warehouse=None):
+    """
+    Organizes the list of dictionaries by warehouse number.
+
+    Parameters:
+    - grouped_by_warehouse (dict, optional): A dictionary with items grouped by
+                                            warehouse number. If not provided,
+                                            an empty dictionary is initialized.
+
+    Returns:
+    dict: A dictionary with items grouped by their respective warehouse numbers.
+
+    Note:
+    This function ensures proper handling of data with any number of warehouses..
+    """
     if grouped_by_warehouse is None:
         grouped_by_warehouse = {}
 
@@ -273,81 +287,102 @@ def searching_for_item(name, data=None):
             ask_for_placing_order(name, total_amount, looking_for_item)
 
         return
+    
+
+def product_amount_counter(product_amount=None):
+    
+    if product_amount is None:
+        product_amount = {}
+    
+    for dct in stock:
+        key = dct['category']
+        if key in product_amount:
+            product_amount[key] += 1
+        else:
+            product_amount[key] = 1
+            
+    return product_amount
 
 
-def browse_by_category(name, counter=1, product_counter=None, product_dct=None, data=None):
+def numeric_product_amount(counter=1, data=None, product_dct=None):
+    
+    if data is None:
+        data = product_amount_counter()
+    if product_dct is None:
+        product_dct = {}
+        
+        for number, product_amount in data.items():
+            product_dct[counter] = [number, product_amount]
+            counter += 1
+            
+    return product_dct
+
+
+def browse_by_category(
+    name, counter=1, product_counter=None, product_dct=None, data=None, total_amount=0):
     """
     Display a menu of available product categories.
-    Upon selecting a category number, it prints all products
-    in that category along with their warehouses.
+    Upon selecting a category number, it prints products of each page of
+    warehouse. Pressing enter leads to next page of warehouse.
 
     Parameters:
     - name (str): The name of the user.
     - counter (int, default = 1): a numeric code for the categories
-    - product_counter (dict): the dictionary
-      contains the amount of stocked product
-    - product_dct (dict): The dictionary contains numeric keys,
-      with product names and amounts as values.
+    - product_counter (dict): A dictionary mapping product names
+                            to their stock counts.
+    - product_dct (dict): A dictionary with numeric keys mapping to product
+                            names and their respective amounts
+    - data (dict, optional): A dictionary of items
+                            organized by warehouses. If not provided,
+                            it defaults to the output of the function
+                            `rearrange_stock_based_on_warehouse()`.
+    - total_amount (int, default = 0):  Total number of products 
+                                        within each category.
 
     Returns:
-    None. This function only interacts with the user
-    via print statements and input prompts.
+    None. Interacts with the user solely
+    via print statements and input prompts."
 
     Note:
     This function is intended to be called after 'option()'.
     This function is executed if the user selects number 3 in option().
-    This function makes use of list of dictionary 'stock', from data module
 
     """
-    if product_counter is None:
-        product_counter = {}
+    # if product_counter is None:
+    product_counter = product_amount_counter()
     if product_dct is None:
-        product_dct = {}
+        product_dct = numeric_product_amount()
     if data is None:
         data = rearrange_stock_based_on_warehouse()
 
-    for dct in stock:
-        product = dct["category"]
-
-        if product in product_counter:
-            product_counter[product] += 1
-
-        else:
-            product_counter[product] = 1
-
     for key, value in product_counter.items():
-        product_dct[counter] = [key, value]
         print(f"{counter}. {key} ({value})")
         counter += 1
 
     prompt = get_int("Type the number of the category to browse: ")
     print()
     
-    
     for key, value in product_dct.items():
         if prompt == key:
             for warehouse_number, product in data.items():
                 total = 0
+                state_category = {}
                 for dct in product:
+                    key = dct['state']+' '+dct['category']
                     if value[0] in dct["category"]:
-                        print(f'{dct["state"]} {dct["category"]}, Warehouse {warehouse_number}')
+                        if key in state_category:
+                            state_category[key] += 1
+                        else:
+                            state_category[key] = 1
                         total += 1
-                print(f'- Total {total} amount of {value[0]} in warehouse {warehouse_number}')
-                prompt = input('Please press enter for next warehouse : ')
-                            
-    print()
+                        total_amount += 1
+                for product_name, amount in state_category.items():
+                    
+                    print(f'{product_name}, in amount ({amount}) in warehouse {warehouse_number}')
+                print(f"- Total of ({total}) {value[0]} in warehouse {warehouse_number}")
+                input("Please press enter for next warehouse : ")
+    print(f'- Total of ({total_amount}) in all warehouses')
     print(f"Thank you for your visit, {name}!")
-    # print()
-    # for key, value in product_dct.items():
-    #     if prompt == key:
-    #         for dict in stock:
-    #             if value[0] in dict["category"]:
-    #                 if dict["warehouse"] == 1:
-    #                     print(f'{dict["state"]} {dict["category"]}, Warehouse 1')
-    #                 else:
-    #                     print(f'{dict["state"]} {dict["category"]}, Warehouse 2')
-    # print()
-    # print(f"Thank you for your visit, {name}!")
 
 
 def options(name):
