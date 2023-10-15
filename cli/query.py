@@ -107,6 +107,8 @@ def lst_of_items(name, data=None, product_counter=None, items_per_page=50):
         print(f"Total items in warehouse {number}: {amount_product}")
     print()
     print(f"Thank you for your visit, {name}!")
+    
+    return f'Listed {len(stock)} items'
 
 
 def ask_for_max(name, total, item_name):
@@ -286,7 +288,7 @@ def searching_for_item(name, data=None):
         else:
             ask_for_placing_order(name, total_amount, looking_for_item)
 
-        return
+        return f'Searchen a {looking_for_item.capitalize()}'
     
 
 def product_amount_counter(product_amount=None):
@@ -364,6 +366,7 @@ def browse_by_category(
     
     for key, value in product_dct.items():
         if prompt == key:
+            selected_category = value[0]
             for warehouse_number, product in data.items():
                 total = 0
                 state_category = {}
@@ -383,9 +386,9 @@ def browse_by_category(
                 input("Please press enter for next warehouse : ")
     print(f'- Total of ({total_amount}) in all warehouses')
     print(f"Thank you for your visit, {name}!")
+    return f'Browsed the category {selected_category}.'
 
-
-def options(name):
+def options(name, actions_taken = []):
     """
     Prompt the user to continuously select one of three options:
     1. List items by warehouse
@@ -422,14 +425,17 @@ def options(name):
             print(f"Thank you for your visit, {name}!")
 
         if query_for_options == "1":
-            lst_of_items(name)
-
+            action = lst_of_items(name)
+            actions_taken.append(action)
         elif query_for_options == "2":
-            searching_for_item(name)
-
+            action = searching_for_item(name)
+            actions_taken.append(action)
         elif query_for_options == "3":
-            browse_by_category(name, product_counter={})
-
+            action = browse_by_category(name, product_counter={})
+            actions_taken.append(action)
+    print('In this session you have:')   
+    for idx, done in enumerate(actions_taken, start=1):
+        print(f'{idx}. {done}')
 
 def main():
     """
