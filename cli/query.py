@@ -1,4 +1,4 @@
-from data import stock
+from data import stock, personnel
 from datetime import datetime as dt
 
 VALID_MENU_CHOICES = ["1", "2", "3", "4"]
@@ -60,8 +60,7 @@ def lst_of_items(name, data=None, product_counter=None, items_per_page=50):
                                         per page during pagination.
 
     Returns:
-    None. This function interacts with the user
-    through print statements and input prompts.
+        str: Text indicating that the user has displayed a list of all items.
 
     Note:
     The items from different warehouses are displayed in separate sections.
@@ -107,8 +106,8 @@ def lst_of_items(name, data=None, product_counter=None, items_per_page=50):
         print(f"Total items in warehouse {number}: {amount_product}")
     print()
     print(f"Thank you for your visit, {name}!")
-    
-    return f'Listed {len(stock)} items'
+
+    return f"Listed {len(stock)} items"
 
 
 def ask_for_max(name, total, item_name):
@@ -118,6 +117,10 @@ def ask_for_max(name, total, item_name):
     - name (str): The name of the user.
     - total (int): The total available quantity of the item.
     - item_name (str): The name of the item user is interested in.
+
+    Returns:
+    bool: Returns False if the user selects 'n', and True if 'y'.
+
     Note:
     This function is following the function 'ask_for_placing_order()'.
     This function is executed when user types in more amount
@@ -130,14 +133,71 @@ def ask_for_max(name, total, item_name):
             continue
         if ask_again.lower() == "n":
             print(f"Thank you for your visit, {name}!")
-            break
+            return False
         elif ask_again.lower() == "y":
             print(f"{total} {item_name} have been ordered")
             print()
             print(f"Thank you for your visit, {name}")
-            break
+            return True
 
 
+def validate_user(func):
+    """
+    A decorator to validate the user's credentials before allowing them to order a product.
+
+    Parameters:
+    - func (function): The original function being decorated.
+
+    Notes:
+    - This is a decorator with three inner functions:
+        1. `authenticate()`: Validates the user's credentials against a provided list.
+        2. `prompt_username_password()`: Prompts the user for their username and password.
+        3. `wrapped_func()`: The main wrapper function which integrates the above two functions
+           and checks authentication before calling the original function.
+
+    The decorator will repeatedly prompt for credentials until the user either authenticates
+    successfully or chooses to exit. If authenticated, the original function (`func`) is executed.
+    """
+
+    def authenticate(personnel_lst, p_user_name, p_password):
+        for dct in personnel_lst:
+            if dct["user_name"] == p_user_name and dct["password"] == p_password:
+                return True
+            elif "head_of" in dct:
+                if authenticate(dct["head_of"], p_user_name, p_password):
+                    return True
+        return False
+
+    def prompt_username_password():
+        p_user_name = input("*** Enter the user name ***: ")
+        p_password = input("*** Enter your password ***: ")
+
+        return p_user_name, p_password
+
+    def wrapped_func(name, total, item_name, username_password=[]):
+        authenticated = False
+
+        while not authenticated:
+            if len(username_password) == 0:
+                username_password = list(prompt_username_password())
+
+            authenticated = authenticate(
+                personnel, username_password[0], username_password[1]
+            )
+            if authenticated:
+                result = func(name, total, item_name)
+                return result
+            else:
+                print(f"Authentication failed!")
+                try_again = input("Press 'q' to exit or any other key to try again:")
+                if try_again.lower() == "q":
+                    return
+                username_password.clear()
+
+    return wrapped_func
+
+
+@validate_user
 def ask_for_placing_order(name, total, item_name):
     """
     Prompt the user to place an order for a specific item.
@@ -158,47 +218,32 @@ def ask_for_placing_order(name, total, item_name):
     Various messages are shown based
     on the available stock and desired quantity.
     """
-    continue_loop = True
 
-    while continue_loop:
-        ask_for_order = input("Would you like to order this item?(y/n): ")
+    while True:
+        ask_for_amount = get_int("How many would you like?: ")
 
-        if ask_for_order.lower() not in YES_OR_NO:
-            print(f"{ask_for_order} is not a valid operation. please try again.")
-            continue
-
-        if ask_for_order.lower() == "n":
+        if ask_for_amount <= 0:
+            print("Nothing has been ordered")
+            print()
             print(f"Thank you for your visit, {name}!")
+            return False
 
-            continue_loop = False
+        if ask_for_amount > total:
+            print("**************************************************")
+            print(
+                f"There are not this many available. The maximum amount that can be ordered is {total}"
+            )
+            print("**************************************************")
+            result = ask_for_max(name, total, item_name)
+            if result:
+                return True
+            return False
 
-        elif ask_for_order.lower() == "y":
-            while True:
-                ask_for_amount = get_int("How many would you like?: ")
-
-                if ask_for_amount <= 0:
-                    print("Nothing has been ordered")
-                    print()
-                    print(f"Thank you for your visit, {name}!")
-                    continue_loop = False
-                    break
-
-                if ask_for_amount > total:
-                    print("**************************************************")
-                    print(
-                        f"There are not this many available. The maximum amount that can be ordered is {total}"
-                    )
-                    print("**************************************************")
-                    ask_for_max(name, total, item_name)
-
-                elif total >= ask_for_amount > 0:
-                    print(f"{ask_for_amount} {item_name} have been ordered")
-                    print()
-                    print(f"Thank you for your visit, {name}")
-                    continue_loop = False
-                    break
-
-                return
+        elif total >= ask_for_amount > 0:
+            print(f"{ask_for_amount} {item_name} have been ordered")
+            print()
+            print(f"Thank you for your visit, {name}")
+            return True
 
 
 def rearrange_stock_based_on_warehouse(grouped_by_warehouse=None):
@@ -230,7 +275,7 @@ def rearrange_stock_based_on_warehouse(grouped_by_warehouse=None):
     return grouped_by_warehouse
 
 
-def searching_for_item(name, data=None):
+def searching_for_item(name, data=None, continue_loop=True):
     """
     Search item and validate the amount of the item in each any number of warehouse.
 
@@ -241,8 +286,7 @@ def searching_for_item(name, data=None):
                             it defaults to the output of the function
                             `rearrange_stock_based_on_warehouse()`.
     Returns:
-    None. This function only interacts with the user via
-    print statements and input prompts.
+        str: The item the user has searched.
 
     Note:
     This function is intended to be called after 'option()'.
@@ -283,45 +327,97 @@ def searching_for_item(name, data=None):
             print("Location: Not in stock")
             print()
             print(f"Thank you for your visit, {name}!")
-            break
+            return f"Searched {looking_for_item.capitalize()} but nothing found"
+            # break
 
         else:
-            ask_for_placing_order(name, total_amount, looking_for_item)
+            while continue_loop:
+                ask_for_order = input("Would you like to order this item?(y/n): ")
 
-        return f'Searchen a {looking_for_item.capitalize()}'
-    
+                if ask_for_order.lower() not in YES_OR_NO:
+                    print(
+                        f"{ask_for_order} is not a valid operation. please try again."
+                    )
+                    continue
+
+                if ask_for_order.lower() == "n":
+                    print(f"Thank you for your visit, {name}!")
+                    # continue_loop = False
+                    return f"Searched a {looking_for_item.capitalize()}"
+                elif ask_for_order.lower() == "y":
+                    order_placed = ask_for_placing_order(
+                        name, total_amount, looking_for_item
+                    )
+                    if order_placed:
+                        return f"Ordered a {looking_for_item.capitalize()}"
+                    else:
+                        return f"Searched a {looking_for_item.capitalize()}"
+
 
 def product_amount_counter(product_amount=None):
-    
+    """
+    Count the total amount for each product category from the `stock` list.
+
+    Parameters:
+    - product_amount (dict, optional): A dictionary to start with, if available.
+                                      Keys represent product categories, and values
+                                      represent the count of each product category.
+                                      If not provided, an empty dictionary is initialized.
+
+    Returns:
+    dict: A dictionary with product categories as keys and their respective counts as values.
+
+    Notes:
+    This function processes the `stock` list of dictionary to derive the counts for each product category.
+    """
+
     if product_amount is None:
         product_amount = {}
-    
+
     for dct in stock:
-        key = dct['category']
+        key = dct["category"]
         if key in product_amount:
             product_amount[key] += 1
         else:
             product_amount[key] = 1
-            
+
     return product_amount
 
 
 def numeric_product_amount(counter=1, data=None, product_dct=None):
-    
+    """
+    Map each product category to a numeric value and its respective amount.
+
+    Parameters:
+    - counter (int, default=1): The starting number for numeric mapping.
+    - data (dict, optional): The dictionary containing product categories and
+                             their respective counts. If not provided, it defaults
+                             to the output of `product_amount_counter()`.
+    - product_dct (dict, optional): A starting dictionary for numeric mapping.
+                                    If not provided, an empty dictionary is initialized.
+
+    Returns:
+    dict: A dictionary where keys are numeric values and values are lists containing
+          the product category and its count.
+
+    Notes:
+    This function assigns a numeric value to each product category for easier reference.
+    """
     if data is None:
         data = product_amount_counter()
     if product_dct is None:
         product_dct = {}
-        
+
         for number, product_amount in data.items():
             product_dct[counter] = [number, product_amount]
             counter += 1
-            
+
     return product_dct
 
 
 def browse_by_category(
-    name, counter=1, product_counter=None, product_dct=None, data=None, total_amount=0):
+    name, counter=1, product_counter=None, product_dct=None, data=None, total_amount=0
+):
     """
     Display a menu of available product categories.
     Upon selecting a category number, it prints products of each page of
@@ -338,12 +434,11 @@ def browse_by_category(
                             organized by warehouses. If not provided,
                             it defaults to the output of the function
                             `rearrange_stock_based_on_warehouse()`.
-    - total_amount (int, default = 0):  Total number of products 
+    - total_amount (int, default = 0):  Total number of products
                                         within each category.
 
     Returns:
-    None. Interacts with the user solely
-    via print statements and input prompts."
+        str: The category the user has browsed.
 
     Note:
     This function is intended to be called after 'option()'.
@@ -363,7 +458,7 @@ def browse_by_category(
 
     prompt = get_int("Type the number of the category to browse: ")
     print()
-    
+
     for key, value in product_dct.items():
         if prompt == key:
             selected_category = value[0]
@@ -371,7 +466,7 @@ def browse_by_category(
                 total = 0
                 state_category = {}
                 for dct in product:
-                    key = dct['state']+' '+dct['category']
+                    key = dct["state"] + " " + dct["category"]
                     if value[0] in dct["category"]:
                         if key in state_category:
                             state_category[key] += 1
@@ -380,15 +475,19 @@ def browse_by_category(
                         total += 1
                         total_amount += 1
                 for product_name, amount in state_category.items():
-                    
-                    print(f'{product_name}, in amount ({amount}) in warehouse {warehouse_number}')
-                print(f"- Total of ({total}) {value[0]} in warehouse {warehouse_number}")
+                    print(
+                        f"{product_name}, in amount ({amount}) in warehouse {warehouse_number}"
+                    )
+                print(
+                    f"- Total of ({total}) {value[0]} in warehouse {warehouse_number}"
+                )
                 input("Please press enter for next warehouse : ")
-    print(f'- Total of ({total_amount}) in all warehouses')
+    print(f"- Total of ({total_amount}) in all warehouses")
     print(f"Thank you for your visit, {name}!")
-    return f'Browsed the category {selected_category}.'
+    return f"Browsed the category {selected_category}."
 
-def options(name, actions_taken = []):
+
+def options(name, actions_taken=[]):
     """
     Prompt the user to continuously select one of three options:
     1. List items by warehouse
@@ -397,6 +496,7 @@ def options(name, actions_taken = []):
 
     Parameters:
     - name (str): The name of the user.
+    - actions_taken (lst): Log actions taken during the session.
 
     Returns:
     None. This function only interacts with the
@@ -433,9 +533,10 @@ def options(name, actions_taken = []):
         elif query_for_options == "3":
             action = browse_by_category(name, product_counter={})
             actions_taken.append(action)
-    print('In this session you have:')   
+    print("In this session you have:")
     for idx, done in enumerate(actions_taken, start=1):
-        print(f'{idx}. {done}')
+        print(f"{idx}. {done}")
+
 
 def main():
     """
