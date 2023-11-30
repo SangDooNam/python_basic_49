@@ -158,7 +158,8 @@ def validate_user(func):
     The decorator will repeatedly prompt for credentials until the user either authenticates
     successfully or chooses to exit. If authenticated, the original function (`func`) is executed.
     """
-
+    username_password= [None, None]
+    
     def authenticate(personnel_lst, p_user_name, p_password):
         for dct in personnel_lst:
             if dct["user_name"] == p_user_name and dct["password"] == p_password:
@@ -169,31 +170,42 @@ def validate_user(func):
         return False
 
     def prompt_username_password():
-        p_user_name = input("*** Enter the user name ***: ")
-        p_password = input("*** Enter your password ***: ")
-
+        with open('name.secret', 'wb') as name:
+            p_user_name = input("*** Enter the user name ***: ")
+            binaries_name = [format(ord(i), 'b') for i in p_user_name]
+            for binary in binaries_name:
+                byte = binary + '\n'
+                byte = byte.encode('utf-8')
+                name.write(byte)
+        with open('word.secret', 'wb') as word:
+            p_password = input("*** Enter your password ***: ")
+            binaries_word = [format(ord(i), 'b') for i in p_password]
+            for binary in binaries_word:
+                byte = binary + '\n'
+                byte = byte.encode('utf-8')
+                word.write(byte)
         return p_user_name, p_password
 
-    def wrapped_func(name, total, item_name, username_password=[]):
+    def wrapped_func(name, total, item_name):
+        nonlocal username_password
         authenticated = False
 
         while not authenticated:
-            if len(username_password) == 0:
-                username_password = list(prompt_username_password())
-
-            authenticated = authenticate(
-                personnel, username_password[0], username_password[1]
-            )
+            if username_password[0] is None or username_password[1] is None:
+                username_password = []
+                for name_password in prompt_username_password():
+                    username_password.append(name_password)
+            authenticated = authenticate(personnel, username_password[0], username_password[1])
+            
             if authenticated:
                 result = func(name, total, item_name)
-                return result
+                return result    
             else:
                 print(f"Authentication failed!")
                 try_again = input("Press 'q' to exit or any other key to try again:")
                 if try_again.lower() == "q":
                     return
-                username_password.clear()
-
+                username_password = [None, None]
     return wrapped_func
 
 
@@ -318,7 +330,7 @@ def searching_for_item(name, data=None, continue_loop=True):
                     )
                     count += 1
                     total_amount += 1
-            print(f"Maximim availability: {count} in Warehouse {warehouse_number}")
+            print(f"Maximum availability: {count} in Warehouse {warehouse_number}")
 
         print(f"Total available amount is: {total_amount}")
 
